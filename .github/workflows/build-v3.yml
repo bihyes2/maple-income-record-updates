@@ -32,6 +32,13 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
+      - name: Read version
+        id: meta
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+
       - name: Install dependencies
         working-directory: app
         run: npm ci
@@ -51,9 +58,10 @@ jobs:
       - name: Verify update files
         shell: pwsh
         run: |
+          $version = "${{ steps.meta.outputs.version }}"
           $required = @(
-            "app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe",
-            "app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe.blockmap",
+            "app/dist-v3/MapleIncomeRecord-Setup-$version.exe",
+            "app/dist-v3/MapleIncomeRecord-Setup-$version.exe.blockmap",
             "app/dist-v3/latest.yml"
           )
           foreach ($file in $required) {
@@ -64,25 +72,27 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MapleIncomeRecord-v3.0.0
+          name: MapleIncomeRecord-v${{ steps.meta.outputs.version }}
           path: |
-            app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe
-            app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe.blockmap
+            app/dist-v3/MapleIncomeRecord-Setup-${{ steps.meta.outputs.version }}.exe
+            app/dist-v3/MapleIncomeRecord-Setup-${{ steps.meta.outputs.version }}.exe.blockmap
             app/dist-v3/latest.yml
           if-no-files-found: error
 
-      - name: Publish v3.0.0 release
+      - name: Publish release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view v3.0.0 *> $null
+          $version = "${{ steps.meta.outputs.version }}"
+          $tag = "v$version"
+          gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) {
-            gh release delete v3.0.0 --yes --cleanup-tag
+            gh release delete $tag --yes --cleanup-tag
           }
           $files = @(
-            "app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe",
-            "app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe.blockmap",
+            "app/dist-v3/MapleIncomeRecord-Setup-$version.exe",
+            "app/dist-v3/MapleIncomeRecord-Setup-$version.exe.blockmap",
             "app/dist-v3/latest.yml"
           )
-          gh release create v3.0.0 $files --title "메이플 수익 기록 v3.0.0" --notes "정식 설치형 자동 업데이트 구조로 전환한 최초 버전입니다. v3.0.0은 설치 프로그램을 한 번 직접 실행해야 하며, 이후 버전은 프로그램에서 업데이트됩니다." --latest
+          gh release create $tag $files --title "메이플 수익 기록 v$version" --notes "정식 설치형 자동 업데이트 릴리스입니다." --latest
