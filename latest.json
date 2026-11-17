@@ -1,6 +1,6 @@
 {
-  "version": "2.1.0",
-  "assetUrl": "https://github.com/bihyes2/maple-income-record-updates/releases/download/v2.1.0/app.asar",
-  "sha256": "d5dfdd697a85970498730bbe3282bd839654a7e9b20f3743a8bb514b2eb25aa2",
-  "releaseNotes": "실행 중 업데이트 확인 및 상단 업데이트 버튼 추가"
+  "version": "2.0.0",
+  "assetUrl": "https://github.com/bihyes2/maple-income-record-updates/releases/download/v2.0.0/app.asar",
+  "sha256": "bc093fbbc6bf4b8060318505782f404e502168972beb87efbec95561278bfb77",
+  "releaseNotes": "필수 자동 업데이트 기능을 추가한 최초 배포 버전"
 }
