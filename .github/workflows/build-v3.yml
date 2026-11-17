@@ -1,0 +1,88 @@
+name: Build Maple Income v3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - builder/source-v3.tar.gz.b64
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Decode source
+        shell: pwsh
+        run: |
+          $bytes = [Convert]::FromBase64String((Get-Content builder/source-v3.tar.gz.b64 -Raw).Trim())
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\source.tar.gz", $bytes)
+          New-Item -ItemType Directory -Force app | Out-Null
+          tar -xzf "$env:RUNNER_TEMP\source.tar.gz" -C app
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Validate JavaScript
+        working-directory: app
+        run: |
+          node --check main.js
+          node --check preload.js
+          node --check update-preload.js
+          node --check renderer/hub.js
+
+      - name: Build Windows installer
+        working-directory: app
+        run: npm run dist:win
+
+      - name: Verify update files
+        shell: pwsh
+        run: |
+          $required = @(
+            "app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe",
+            "app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe.blockmap",
+            "app/dist-v3/latest.yml"
+          )
+          foreach ($file in $required) {
+            if (!(Test-Path $file)) { throw "Missing build artifact: $file" }
+          }
+          Get-Content app/dist-v3/latest.yml
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MapleIncomeRecord-v3.0.0
+          path: |
+            app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe
+            app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe.blockmap
+            app/dist-v3/latest.yml
+          if-no-files-found: error
+
+      - name: Publish v3.0.0 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v3.0.0 *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release delete v3.0.0 --yes --cleanup-tag
+          }
+          $files = @(
+            "app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe",
+            "app/dist-v3/MapleIncomeRecord-Setup-3.0.0.exe.blockmap",
+            "app/dist-v3/latest.yml"
+          )
+          gh release create v3.0.0 $files --title "메이플 수익 기록 v3.0.0" --notes "정식 설치형 자동 업데이트 구조로 전환한 최초 버전입니다. v3.0.0은 설치 프로그램을 한 번 직접 실행해야 하며, 이후 버전은 프로그램에서 업데이트됩니다." --latest
