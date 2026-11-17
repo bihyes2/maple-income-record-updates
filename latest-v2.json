@@ -1,6 +1,6 @@
 {
-  "version": "2.2.0",
-  "assetUrl": "https://github.com/bihyes2/maple-income-record-updates/releases/download/v2.2.0/app.asar",
-  "sha256": "a96dfcc5dfb5a89bcc5a70cd51fa0ee7457a29bf9d0298380f423121546d04cb",
-  "releaseNotes": "업데이트 다운로드 중 Invalid package 오류 수정"
+  "version": "2.2.1",
+  "assetUrl": "https://github.com/bihyes2/maple-income-record-updates/releases/download/v2.2.1/app.asar",
+  "sha256": "5ca62252fb0b3e83da344d3bf879a6746ee8f3a37fb407339dc1cd9c96cf46db",
+  "releaseNotes": "자동 업데이트 동작 확인용 테스트 버전"
 }
